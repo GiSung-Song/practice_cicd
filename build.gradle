@@ -34,3 +34,9 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+bootJar{
+	archivesBaseName = 'devops-integration'
+	archiveFileName = 'devops-integration.jar'
+	archiveVersion = "0.0.1"
+}
