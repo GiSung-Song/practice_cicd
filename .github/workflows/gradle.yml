@@ -61,7 +61,6 @@ jobs:
         with:
           host: ${{ secrets.HOST }} # EC2 인스턴스 퍼블릭 DNS
           username: ubuntu
-          port: 22
           key: ${{ secrets.PRIVATE_KEY }} # EC2 pem key
           # 도커 작업
           scripts: |
