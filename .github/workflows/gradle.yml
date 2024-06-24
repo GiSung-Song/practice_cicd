@@ -62,9 +62,10 @@ jobs:
           host: ${{ secrets.HOST }} # EC2 인스턴스 퍼블릭 DNS
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }} # EC2 pem key
-          envs: GITHUB_SHA
-        script: |
-          sudo docker rm -f $(docker ps -qa)
-          sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration
-          docker-compose up -d
-          docker image prune -f
+          # 도커 작업
+          scripts: |
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
+            sudo docker stop $(docker ps -a -q)
+            sudo docker run -d --log-driver=syslog -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
+            sudo docker rm $(docker ps --filter 'status=exited' -a -q)
+            sudo docker image prune -a -f
