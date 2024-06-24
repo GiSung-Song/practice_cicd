@@ -10,4 +10,9 @@ public class SampleController {
     public String getMain() {
         return "This is Main Page !!";
     }
+
+    @GetMapping("/sample")
+    public String getSample() {
+        return "This is Sample Page !!";
+    }
 }

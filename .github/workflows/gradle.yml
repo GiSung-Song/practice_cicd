@@ -12,7 +12,7 @@ on:
 
 # job 정의
 jobs:
-  build:
+  build-and-push-docker:
 
     # 이 job을 수행하는 OS ex) windows-latest, macos-12 등 / github-hosted-runner 이용 시 가상환경 사용 가능
     runs-on: ubuntu-latest
@@ -48,3 +48,24 @@ jobs:
 
       - name: Docker Hub Push # DockerHub로 push
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration
+
+  # EC2로 배포
+  deploy-to-ec2:
+
+    needs: build-and-push-docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }} # EC2 인스턴스 퍼블릭 DNS
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }} # EC2 pem key
+          # 도커 작업
+          scripts: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
+            docker stop $(docker ps -a -q)
+            docker run -d --log-driver=syslog -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
+            docker rm $(docker ps --filter 'status=exited' -a -q)
+            docker image prune -a -f
