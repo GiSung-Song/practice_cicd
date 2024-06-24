@@ -66,6 +66,6 @@ jobs:
           scripts: |
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
             sudo docker stop $(docker ps -a -q)
-            sudo docker run -d --log-driver=syslog -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
+            sudo docker run -d --log-driver=syslog -p 80:8080 ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
             sudo docker rm $(docker ps --filter 'status=exited' -a -q)
             sudo docker image prune -a -f
