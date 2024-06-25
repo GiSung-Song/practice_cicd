@@ -35,10 +35,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle Wrapper # build
-        run: ./gradlew build
-
-      - name: Docker Image Build # Docker image build
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration .
+        run: ./gradlew clean build --exclude-task test # test 제외한 build
 
       - name: Docker Login # Docker Login
         uses: docker/login-action@v2
@@ -46,8 +43,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Docker Image Build # Docker image build
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }} .
+
       - name: Docker Hub Push # DockerHub로 push
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }}
 
   # EC2로 배포
   deploy-to-ec2:
@@ -60,12 +60,15 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }} # EC2 인스턴스 퍼블릭 DNS
-          username: ubuntu
+          username: ${{ secrets.EC2_USERNAME }} # ubuntu
           key: ${{ secrets.PRIVATE_KEY }} # EC2 pem key
           # 도커 작업
-          run: |
-            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
-            sudo docker stop $(docker ps -a -q)
-            sudo docker rm $(docker ps --filter 'status=exited' -a -q)
-            sudo docker run -d --log-driver=syslog -p 80:8080 ${{ secrets.DOCKERHUB_USERNAME }}/devops-integration:latest
-            sudo docker image prune -a -f
+          script: |
+            sudo docker kill ${{ secrets.PROJECT_NAME }}
+            sudo docker rm -f ${{ secrets.PROJECT_NAME }}
+            sudo docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }}
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }}
+  
+            sudo docker run -p ${{ secrets.PORT }}:${{ secrets.PORT }} \
+            --name ${{ secrets.PROJECT_NAME }} \
+            -d ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.PROJECT_NAME }}
